@@ -13,11 +13,14 @@ class LeituraThread(threading.Thread):
             while True:
                 resposta = reader.readline()
                 if not resposta:
+                    print("Conexão encerrada pelo servidor.")
                     break
+
                 print("Servidor:", resposta.strip())
 
         except Exception as e:
             print("Erro na leitura:", e)
+
 
 
 class EscritaThread(threading.Thread):
@@ -32,7 +35,6 @@ class EscritaThread(threading.Thread):
                 self.sock.sendall((msg + "\n").encode())
 
                 if msg == "4":
-                    self.sock.close()
                     break
 
         except Exception as e:
@@ -41,13 +43,30 @@ class EscritaThread(threading.Thread):
 
 def main():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect(("localhost", 6000))  # trocar pelo IP
+    sock.connect(("localhost", 6000))  # trocar pelo IP do servidor
 
+    sock.settimeout(2)
+
+    try:
+        reader = sock.makefile("r")
+        resposta = reader.readline()
+
+        if resposta and "Conexão não aceita" in resposta:
+            print(resposta.strip())
+            sock.close()
+            return
+    except:
+        pass
+
+    sock.settimeout(None)
+
+    print("===========================================")
     print("Conectado ao servidor!")
     print("1 - Hora")
     print("2 - Data")
     print("3 - Me fale algo legal")
     print("4 - Sair")
+    print("===========================================")
 
     LeituraThread(sock).start()
     EscritaThread(sock).start()
